@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MarkerGenerator", "MarkerGe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Calibration", "Calibration\Calibration.vcxproj", "{4844443C-5CA5-4A59-8207-94AB04D97E3E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleTracker", "SimpleTracker\SimpleTracker.vcxproj", "{AA0998C0-3013-4759-BB79-4CD7E4419122}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,16 @@ Global
 		{4844443C-5CA5-4A59-8207-94AB04D97E3E}.Release|x64.Build.0 = Release|x64
 		{4844443C-5CA5-4A59-8207-94AB04D97E3E}.Release|x86.ActiveCfg = Release|Win32
 		{4844443C-5CA5-4A59-8207-94AB04D97E3E}.Release|x86.Build.0 = Release|Win32
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Debug|x64.ActiveCfg = Debug|x64
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Debug|x64.Build.0 = Debug|x64
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Debug|x86.ActiveCfg = Debug|Win32
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Debug|x86.Build.0 = Debug|Win32
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|Any CPU.ActiveCfg = Release|Win32
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x64.ActiveCfg = Release|x64
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x64.Build.0 = Release|x64
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x86.ActiveCfg = Release|Win32
+		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
