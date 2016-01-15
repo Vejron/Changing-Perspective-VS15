@@ -1,0 +1,10 @@
+{
+  "name": "UdpRelayService",
+  "version": "0.0.0",
+  "description": "UdpRelayService",
+  "main": "app.js",
+  "author": {
+    "name": "Vejron",
+    "email": ""
+  }
+}

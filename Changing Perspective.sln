@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCVTemplate", "OpenCVTemplate\OpenCVTemplate.vcxproj", "{04850539-F38A-49A2-9E31-A673C81F30B5}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Calibration", "Calibration\Calibration.vcxproj", "{4844443C-5CA5-4A59-8207-94AB04D97E3E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleTracker", "SimpleTracker\SimpleTracker.vcxproj", "{AA0998C0-3013-4759-BB79-4CD7E4419122}"
+EndProject
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "UdpRelayService", "UdpRelayService\UdpRelayService.njsproj", "{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,6 +75,18 @@ Global
 		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x64.Build.0 = Release|x64
 		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x86.ActiveCfg = Release|Win32
 		{AA0998C0-3013-4759-BB79-4CD7E4419122}.Release|x86.Build.0 = Release|Win32
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Debug|x64.Build.0 = Debug|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Debug|x86.Build.0 = Debug|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x64.ActiveCfg = Release|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x64.Build.0 = Release|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x86.ActiveCfg = Release|Any CPU
+		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

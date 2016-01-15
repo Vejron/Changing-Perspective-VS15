@@ -40,9 +40,13 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
 #include <iostream>
+#include <boost/asio.hpp>
+
+#include "UDPClient.h"
 
 using namespace std;
 using namespace cv;
+using boost::asio::ip::udp;
 
 namespace {
 const char* about = "Basic marker detection";
@@ -58,7 +62,7 @@ const char* keys  =
         "{dp       |       | File of marker detector parameters }"
         "{r        |       | show rejected candidates too }";
 }
-// Usage: SimpleTracker.exe -d=5 --ci=0 c=calibration.xml --dp=detector_params.yml -r=true
+// Usage: SimpleTracker.exe -d=5 --ci=0 -c=calibrationStudioHD.xml --dp=detector_params.yml -r=true
 
 /**
  */
@@ -103,6 +107,52 @@ static bool readDetectorParameters(string filename, aruco::DetectorParameters &p
 }
 
 
+
+static vector<MarkerPod> makeBinaryPacket(const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
+{
+	vector<MarkerPod> packet;
+	for (size_t i = 0; i < ids.size(); i++)
+	{
+		MarkerPod p{ids[i], rvecs[i][0], rvecs[i][1], rvecs[i][2], tvecs[i][0], tvecs[i][1], tvecs[i][2]};
+		packet.push_back(p);
+	}
+	return packet;
+}
+
+/**
+ */
+static string makeJsonPacket(const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
+{
+	// transform into json array
+	std::stringstream jsonPacket;
+	jsonPacket << "{ \"t\":[";
+	for (size_t i = 0; i < ids.size(); i++)
+	{
+		// rotation
+		float r0 = rvecs[i][0];
+		float r1 = rvecs[i][1];
+		float r2 = rvecs[i][2];
+
+		// translation
+		float t0 = tvecs[i][0];
+		float t1 = tvecs[i][1];
+		float t2 = tvecs[i][2];
+
+		jsonPacket << '{'
+			<< "\"id\":" << ids[i] << ','
+			<< "\"r0\":" << r0 << ','
+			<< "\"r1\":" << r1 << ','
+			<< "\"r2\":" << r2 << ','
+			<< "\"t0\":" << t0 << ','
+			<< "\"t1\":" << t1 << ','
+			<< "\"t2\":" << t2 << '}';
+		if (i < ids.size() - 1)
+			jsonPacket << ',';
+	}
+	jsonPacket << "]}";
+
+	return jsonPacket.str();
+}
 
 /**
  */
@@ -166,50 +216,117 @@ int main(int argc, char *argv[]) {
 
     double totalTime = 0;
     int totalIterations = 0;
+	Mat image, imageCopy;
 
-    while(inputVideo.grab()) {
-        Mat image, imageCopy;
-        inputVideo.retrieve(image);
+	// Udp test
+	try
+	{
+		boost::asio::io_service io_service;
+		UDPClient client(io_service, "localhost", "666");
+		
+		while (inputVideo.grab()) {
+			inputVideo.retrieve(image);
 
-        double tick = (double)getTickCount();
 
-        vector< int > ids;
-        vector< vector< Point2f > > corners, rejected;
-        vector< Vec3d > rvecs, tvecs;
+			double tick = (double)getTickCount();
 
-        // detect markers and estimate pose
-        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
-        if(estimatePose && ids.size() > 0)
-            aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
-                                             tvecs);
+			vector< int > ids;
+			vector< vector< Point2f > > corners, rejected;
+			vector< Vec3d > rvecs, tvecs;
 
-        double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
-        totalTime += currentTime;
-        totalIterations++;
-        if(totalIterations % 30 == 0) {
-            cout << "Detection Time = " << currentTime * 1000 << " ms "
-                 << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms)" << endl;
-        }
+			// detect markers and estimate pose
+			aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+			if (estimatePose && ids.size() > 0)
+			{
+				aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
+					tvecs);
 
-        // draw results
-        image.copyTo(imageCopy);
-        if(ids.size() > 0) {
-            aruco::drawDetectedMarkers(imageCopy, corners, ids);
+				auto p = makeBinaryPacket(rvecs, tvecs, ids);
+				client.send(p);
+				//client.send(makeJsonPacket(rvecs, tvecs, ids));
+			}
 
-            if(estimatePose) {
-                for(unsigned int i = 0; i < ids.size(); i++)
-                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-                                    markerLength * 0.5f);
-            }
-        }
+			double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
+			totalTime += currentTime;
+			totalIterations++;
+			if (totalIterations % 30 == 0) {
+				cout << "Detection Time = " << currentTime * 1000 << " ms "
+					<< "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms) "
+					<< "Detected Markers = " << ids.size() << endl;
+			}
 
-        if(showRejected && rejected.size() > 0)
-            aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
+			// draw results
+			image.copyTo(imageCopy);
+			if (ids.size() > 0) {
+				aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-        imshow("out", imageCopy);
-        char key = (char)waitKey(waitTime);
-        if(key == 27) break;
-    }
+				if (estimatePose) {
+					for (unsigned int i = 0; i < ids.size(); i++)
+						aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
+							markerLength * 0.5f);
+				}
+			}
+
+			if (showRejected && rejected.size() > 0)
+				aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
+
+			imshow("out", imageCopy);
+			char key = (char)waitKey(waitTime);
+			if (key == 27) break;
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << "\n";
+	}
+	
+  //  while(inputVideo.grab()) {
+  //      inputVideo.retrieve(image);
+		//
+		//
+  //      double tick = (double)getTickCount();
+
+  //      vector< int > ids;
+  //      vector< vector< Point2f > > corners, rejected;
+  //      vector< Vec3d > rvecs, tvecs;
+
+  //      // detect markers and estimate pose
+  //      aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+		//if (estimatePose && ids.size() > 0)
+		//{
+		//	aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
+		//		tvecs);
+		//	client.send("Hello, World!");
+		//}
+
+  //      double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
+  //      totalTime += currentTime;
+  //      totalIterations++;
+  //      if(totalIterations % 30 == 0) {
+  //          cout << "Detection Time = " << currentTime * 1000 << " ms "
+  //               << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms) " 
+		//		 << "Detected Markers = " << ids.size() << endl;
+  //      }
+
+  //      // draw results
+  //      image.copyTo(imageCopy);
+  //      if(ids.size() > 0) {
+  //          aruco::drawDetectedMarkers(imageCopy, corners, ids);
+
+  //          if(estimatePose) {
+  //              for(unsigned int i = 0; i < ids.size(); i++)
+  //                  aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
+  //                                  markerLength * 0.5f);
+  //          }
+  //      }
+
+  //      if(showRejected && rejected.size() > 0)
+  //          aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
+
+  //      imshow("out", imageCopy);
+  //      char key = (char)waitKey(waitTime);
+  //      if(key == 27) break;
+  //  }
 
     return 0;
 }

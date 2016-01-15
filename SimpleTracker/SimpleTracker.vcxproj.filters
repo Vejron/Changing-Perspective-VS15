@@ -24,5 +24,11 @@
   </ItemGroup>
   <ItemGroup>
     <Xml Include="calibration.xml" />
+    <Xml Include="calibrationStudioHD.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UDPClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

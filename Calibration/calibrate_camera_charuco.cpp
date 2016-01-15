@@ -1,5 +1,5 @@
 // Björn Yttergren
-// Usage: Calibration.exe -w=5 -h=7 --sl=600 --ml=500 -d=5 calibration.xml --ci=0 --sc=true
+// Usage: Calibration.exe -w=5 -h=7 --sl=600 --ml=500 -d=5 calibrationStudioHD.xml --ci=0 --sc=true
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
