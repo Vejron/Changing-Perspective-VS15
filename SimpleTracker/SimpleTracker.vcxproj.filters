@@ -13,6 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Configuration">
+      <UniqueIdentifier>{baf04987-3d2b-422c-9ac4-6e357785df31}</UniqueIdentifier>
+      <Extensions>xml;yml</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="detect_markers.cpp">
@@ -20,15 +24,21 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="detector_params.yml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="calibration.xml" />
-    <Xml Include="calibrationStudioHD.xml" />
+    <None Include="table_configuration.yml">
+      <Filter>Configuration</Filter>
+    </None>
+    <None Include="detector_params.yml">
+      <Filter>Configuration</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="UDPClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="camera_calibration.xml">
+      <Filter>Configuration</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

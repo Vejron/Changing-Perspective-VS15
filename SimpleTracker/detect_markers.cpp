@@ -60,53 +60,96 @@ const char* keys  =
         "{c        |       | Camera intrinsic parameters. Needed for camera pose }"
         "{l        | 0.1   | Marker side lenght (in meters). Needed for correct scale in camera pose }"
         "{dp       |       | File of marker detector parameters }"
-        "{r        |       | show rejected candidates too }";
+        "{r        |       | show rejected candidates too }"
+		"{s		   |	   | show debug view }";
 }
 // Usage: SimpleTracker.exe -d=5 --ci=0 -c=calibrationStudioHD.xml --dp=detector_params.yml -r=true
 
+struct DetectorSettings
+{
+	int tableId = 0;
+	int camId = 0;
+	int dictionaryId = 5;
+	float markerLength = 0.1f;
+	bool showRejected = false;
+	bool showDebugView = false;
+	string paramsFile;
+	string calibrationFile;
+	Mat camMatrix;
+	Mat distCoeffs;
+	aruco::DetectorParameters params;
+};
+
 /**
- */
+*/
 static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
-    FileStorage fs(filename, FileStorage::READ);
-    if(!fs.isOpened())
-        return false;
-    fs["camera_matrix"] >> camMatrix;
-    fs["distortion_coefficients"] >> distCoeffs;
-    return true;
+	FileStorage fs(filename, FileStorage::READ);
+	if (!fs.isOpened())
+		return false;
+	fs["camera_matrix"] >> camMatrix;
+	fs["distortion_coefficients"] >> distCoeffs;
+	return true;
 }
-
-
 
 /**
- */
+*/
 static bool readDetectorParameters(string filename, aruco::DetectorParameters &params) {
-    FileStorage fs(filename, FileStorage::READ);
-    if(!fs.isOpened())
-        return false;
-    fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
-    fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
-    fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
-    fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
-    fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
-    fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
-    fs["polygonalApproxAccuracyRate"] >> params.polygonalApproxAccuracyRate;
-    fs["minCornerDistanceRate"] >> params.minCornerDistanceRate;
-    fs["minDistanceToBorder"] >> params.minDistanceToBorder;
-    fs["minMarkerDistanceRate"] >> params.minMarkerDistanceRate;
-    fs["doCornerRefinement"] >> params.doCornerRefinement;
-    fs["cornerRefinementWinSize"] >> params.cornerRefinementWinSize;
-    fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
-    fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
-    fs["markerBorderBits"] >> params.markerBorderBits;
-    fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
-    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
-    fs["minOtsuStdDev"] >> params.minOtsuStdDev;
-    fs["errorCorrectionRate"] >> params.errorCorrectionRate;
-    return true;
+	FileStorage fs(filename, FileStorage::READ);
+	if (!fs.isOpened())
+		return false;
+	fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
+	fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
+	fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
+	fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
+	fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
+	fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
+	fs["polygonalApproxAccuracyRate"] >> params.polygonalApproxAccuracyRate;
+	fs["minCornerDistanceRate"] >> params.minCornerDistanceRate;
+	fs["minDistanceToBorder"] >> params.minDistanceToBorder;
+	fs["minMarkerDistanceRate"] >> params.minMarkerDistanceRate;
+	fs["doCornerRefinement"] >> params.doCornerRefinement;
+	fs["cornerRefinementWinSize"] >> params.cornerRefinementWinSize;
+	fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
+	fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
+	fs["markerBorderBits"] >> params.markerBorderBits;
+	fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
+	fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
+	fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
+	fs["minOtsuStdDev"] >> params.minOtsuStdDev;
+	fs["errorCorrectionRate"] >> params.errorCorrectionRate;
+	return true;
 }
 
+/**
+*/
+static bool readTableConfiguration(string filename, DetectorSettings &settings)
+{
+	FileStorage fs(filename, FileStorage::READ);
+	if (!fs.isOpened())
+		return false;
+	fs["tableID"] >> settings.tableId;
+	fs["cameraDeviceNbr"] >> settings.camId;
+	fs["cameraCalibrationFile"] >> settings.calibrationFile;
+	fs["detectorParametersFile"] >> settings.paramsFile;
+	fs["markerDictionary"] >> settings.dictionaryId;
+	fs["markerLength"] >> settings.markerLength;
 
+	if ((bool)fs["useDefaultParameters"].node == false)
+	{
+		if (!readDetectorParameters(settings.paramsFile, settings.params))
+		{
+			cerr << "Invalid detector parameters file" << endl;
+			return false;
+		}
+	}
+
+	if (!readCameraParameters(settings.calibrationFile, settings.camMatrix, settings.distCoeffs)) 
+	{
+		cerr << "Invalid camera calibration file" << endl;
+		return false;
+	}
+	return true;
+}
 
 static vector<MarkerPod> makeBinaryPacket(const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
 {
@@ -156,64 +199,43 @@ static string makeJsonPacket(const vector<Vec3d> &rvecs, const vector<Vec3d> &tv
 
 /**
  */
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
 
-    if(argc < 2) {
-        parser.printMessage();
-        return 0;
-    }
+	if (argc < 1)
+	{
+		parser.printMessage();
+		return 0;
+	}
 
-    int dictionaryId = parser.get<int>("d");
-    bool showRejected = parser.has("r");
-    bool estimatePose = parser.has("c");
-    float markerLength = parser.get<float>("l");
+	DetectorSettings settings;
+	settings.showRejected = parser.has("r");
+	//settings.showDebugView = parser.has("s");
 
-    aruco::DetectorParameters detectorParams;
-    if(parser.has("dp")) {
-        bool readOk = readDetectorParameters(parser.get<string>("dp"), detectorParams);
-        if(!readOk) {
-            cerr << "Invalid detector parameters file" << endl;
-            return 0;
-        }
-    }
-    detectorParams.doCornerRefinement = true; // do corner refinement in markers
+	if (parser.has("c"))
+	{
+		if (!readTableConfiguration(parser.get<string>("c"), settings))
+		{
+			cerr << "Invalid table configuration file" << endl;
+			return 0;
+		}
+	}
 
-    int camId = parser.get<int>("ci");
-
-    String video;
-    if(parser.has("v")) {
-        video = parser.get<String>("v");
-    }
+  
+    //settings.params.doCornerRefinement = true; // do corner refinement in markers
 
     if(!parser.check()) {
         parser.printErrors();
         return 0;
     }
 
-    aruco::Dictionary dictionary =
-        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(settings.dictionaryId));
 
-    Mat camMatrix, distCoeffs;
-    if(estimatePose) {
-        bool readOk = readCameraParameters(parser.get<string>("c"), camMatrix, distCoeffs);
-        if(!readOk) {
-            cerr << "Invalid camera file" << endl;
-            return 0;
-        }
-    }
-
-    VideoCapture inputVideo;
-    int waitTime;
-    if(!video.empty()) {
-        inputVideo.open(video);
-        waitTime = 0;
-    } else {
-        inputVideo.open(camId);
-        waitTime = 10;
-    }
-
+   
+    VideoCapture inputVideo(settings.camId); // + CAP_MSMF
+  
     double totalTime = 0;
     int totalIterations = 0;
 	Mat image, imageCopy;
@@ -235,11 +257,11 @@ int main(int argc, char *argv[]) {
 			vector< Vec3d > rvecs, tvecs;
 
 			// detect markers and estimate pose
-			aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
-			if (estimatePose && ids.size() > 0)
+			aruco::detectMarkers(image, dictionary, corners, ids, settings.params, rejected);
+			if (ids.size() > 0)
 			{
-				aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
-					tvecs);
+				aruco::estimatePoseSingleMarkers(corners, settings.markerLength,
+												 settings.camMatrix, settings.distCoeffs, rvecs, tvecs);
 
 				auto p = makeBinaryPacket(rvecs, tvecs, ids);
 				client.send(p);
@@ -259,19 +281,16 @@ int main(int argc, char *argv[]) {
 			image.copyTo(imageCopy);
 			if (ids.size() > 0) {
 				aruco::drawDetectedMarkers(imageCopy, corners, ids);
-
-				if (estimatePose) {
-					for (unsigned int i = 0; i < ids.size(); i++)
-						aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-							markerLength * 0.5f);
-				}
+				for (unsigned int i = 0; i < ids.size(); i++)
+					aruco::drawAxis(imageCopy, settings.camMatrix, settings.distCoeffs, rvecs[i], tvecs[i],
+						settings.markerLength * 0.5f);
 			}
 
-			if (showRejected && rejected.size() > 0)
+			if (settings.showRejected && rejected.size() > 0)
 				aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
 			imshow("out", imageCopy);
-			char key = (char)waitKey(waitTime);
+			char key = (char)waitKey(10);
 			if (key == 27) break;
 		}
 	}
@@ -280,53 +299,6 @@ int main(int argc, char *argv[]) {
 		std::cerr << "Exception: " << e.what() << "\n";
 	}
 	
-  //  while(inputVideo.grab()) {
-  //      inputVideo.retrieve(image);
-		//
-		//
-  //      double tick = (double)getTickCount();
-
-  //      vector< int > ids;
-  //      vector< vector< Point2f > > corners, rejected;
-  //      vector< Vec3d > rvecs, tvecs;
-
-  //      // detect markers and estimate pose
-  //      aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
-		//if (estimatePose && ids.size() > 0)
-		//{
-		//	aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
-		//		tvecs);
-		//	client.send("Hello, World!");
-		//}
-
-  //      double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
-  //      totalTime += currentTime;
-  //      totalIterations++;
-  //      if(totalIterations % 30 == 0) {
-  //          cout << "Detection Time = " << currentTime * 1000 << " ms "
-  //               << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms) " 
-		//		 << "Detected Markers = " << ids.size() << endl;
-  //      }
-
-  //      // draw results
-  //      image.copyTo(imageCopy);
-  //      if(ids.size() > 0) {
-  //          aruco::drawDetectedMarkers(imageCopy, corners, ids);
-
-  //          if(estimatePose) {
-  //              for(unsigned int i = 0; i < ids.size(); i++)
-  //                  aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-  //                                  markerLength * 0.5f);
-  //          }
-  //      }
-
-  //      if(showRejected && rejected.size() > 0)
-  //          aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
-
-  //      imshow("out", imageCopy);
-  //      char key = (char)waitKey(waitTime);
-  //      if(key == 27) break;
-  //  }
-
+  
     return 0;
 }

@@ -1,0 +1,9 @@
+%YAML:1.0
+tableID: 0
+cameraDeviceNbr: 0
+cameraCalibrationFile: "camera_calibration.xml"
+useDefaultParameters: 1
+detectorParameterFile: "detector_params.yml"
+markerDictionary: 5
+markerLength: 0.1
+

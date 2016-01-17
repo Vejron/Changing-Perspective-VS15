@@ -158,10 +158,10 @@
     <None Include="detector_params.yml">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="table_configuration.yml" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="calibration.xml" />
-    <Xml Include="calibrationStudioHD.xml" />
+    <Xml Include="camera_calibration.xml" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="UDPClient.h" />

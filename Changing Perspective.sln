@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleTracker", "SimpleTrac
 EndProject
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "UdpRelayService", "UdpRelayService\UdpRelayService.njsproj", "{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}"
 EndProject
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "CPServer", "CPServer\CPServer.njsproj", "{8AB04884-DE51-4A24-A877-9F3274FB8253}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x64.Build.0 = Release|Any CPU
 		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x86.ActiveCfg = Release|Any CPU
 		{E089FB59-3E67-4541-BC5D-123AF7D4D8B3}.Release|x86.Build.0 = Release|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Debug|x64.Build.0 = Debug|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Debug|x86.Build.0 = Debug|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Release|x64.ActiveCfg = Release|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Release|x64.Build.0 = Release|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Release|x86.ActiveCfg = Release|Any CPU
+		{8AB04884-DE51-4A24-A877-9F3274FB8253}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
