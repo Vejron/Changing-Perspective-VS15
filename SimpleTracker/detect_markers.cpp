@@ -151,12 +151,12 @@ static bool readTableConfiguration(string filename, DetectorSettings &settings)
 	return true;
 }
 
-static vector<MarkerPod> makeBinaryPacket(const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
+static vector<MarkerPod> makeBinaryPacket(const int tableId, const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
 {
 	vector<MarkerPod> packet;
 	for (size_t i = 0; i < ids.size(); i++)
 	{
-		MarkerPod p{ids[i], rvecs[i][0], rvecs[i][1], rvecs[i][2], tvecs[i][0], tvecs[i][1], tvecs[i][2]};
+		MarkerPod p{tableId, ids[i], rvecs[i][0], rvecs[i][1], rvecs[i][2], tvecs[i][0], tvecs[i][1], tvecs[i][2]};
 		packet.push_back(p);
 	}
 	return packet;
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 				aruco::estimatePoseSingleMarkers(corners, settings.markerLength,
 												 settings.camMatrix, settings.distCoeffs, rvecs, tvecs);
 
-				auto p = makeBinaryPacket(rvecs, tvecs, ids);
+				auto p = makeBinaryPacket(settings.tableId ,rvecs, tvecs, ids);
 				client.send(p);
 				//client.send(makeJsonPacket(rvecs, tvecs, ids));
 			}

@@ -32,14 +32,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="config.js" />
-    <Compile Include="public\js\client.js" />
-    <Compile Include="public\js\pixi.min.js" />
+    <None Include="public\js\client.js" />
     <Compile Include="server.js" />
     <Content Include="package.json" />
+    <Content Include="public\images\bunny.png" />
     <Content Include="public\index.html" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="public\images\" />
     <Folder Include="server\" />
     <Folder Include="public\" />
     <Folder Include="public\js\" />

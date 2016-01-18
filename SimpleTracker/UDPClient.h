@@ -9,7 +9,8 @@ using boost::asio::ip::udp;
 // 7 * 4 = 28 bytes
 struct MarkerPod
 {
-	uint32_t id;		// read offset little endian 0
+	uint16_t tableId;
+	uint16_t markerId;		// read offset little endian 0
 	float r0, r1, r2;	// 4, 8, 12
 	float t0, t1, t2;	// 16, 20, 24
 };
