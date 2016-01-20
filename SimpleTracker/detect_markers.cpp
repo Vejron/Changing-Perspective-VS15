@@ -41,6 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/aruco.hpp>
 #include <iostream>
 #include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "UDPClient.h"
 
@@ -151,12 +152,26 @@ static bool readTableConfiguration(string filename, DetectorSettings &settings)
 	return true;
 }
 
+static int64_t millisecondsSinceEpoch()
+{
+	using boost::gregorian::date;
+	using boost::posix_time::ptime;
+	using boost::posix_time::microsec_clock;
+
+	static ptime const epoch(date(1970, 1, 1));
+	return (microsec_clock::universal_time() - epoch).total_milliseconds();
+}
+
 static vector<MarkerPod> makeBinaryPacket(const int tableId, const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
 {
 	vector<MarkerPod> packet;
 	for (size_t i = 0; i < ids.size(); i++)
 	{
-		MarkerPod p{tableId, ids[i], rvecs[i][0], rvecs[i][1], rvecs[i][2], tvecs[i][0], tvecs[i][1], tvecs[i][2]};
+		MarkerPod p{tableId,
+					ids[i],
+					rvecs[i][0], rvecs[i][1], rvecs[i][2],
+					tvecs[i][0], tvecs[i][1], tvecs[i][2],
+					millisecondsSinceEpoch()};
 		packet.push_back(p);
 	}
 	return packet;

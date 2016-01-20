@@ -6,14 +6,19 @@
 using namespace std;
 using boost::asio::ip::udp;
 
-// 7 * 4 = 28 bytes
+// 2 + 2 + 12 + 12 + 8 = 36 bytes
+// Change byte alignment to pack tighter, and the fact that it screws up the reaciving end
+#pragma pack(push)
+#pragma pack(1)
 struct MarkerPod
 {
 	uint16_t tableId;
 	uint16_t markerId;		// read offset little endian 0
 	float r0, r1, r2;	// 4, 8, 12
 	float t0, t1, t2;	// 16, 20, 24
+	int64_t epoch;		// 28 + 8
 };
+#pragma pack(pop)
 
 class UDPClient
 {
@@ -38,6 +43,7 @@ public:
 	}
 
 	void send(const std::vector<MarkerPod>& msg) {
+		//std::cout << msg[0].epoch << endl;
 		_socket.send_to(boost::asio::buffer(msg), _endpoint);
 	}
 
