@@ -7,7 +7,9 @@ var $ = require('jquery');
 var io = require('socket.io-client');
 var Buffer = require('buffer').Buffer;
 var GlobalStore = require('./markerStore.js');
+var MarkerRenderer = require('./markerRenderer.js');
 var config = require('../../config.js');
+
 
 
 // history of 10 steps and 16 tables
@@ -24,7 +26,7 @@ socket.on('markers', function (arrbuf) {
 				tId: buf.readUInt16LE(i + 0),
 				mId: buf.readUInt16LE(i + 2),
 				rvec: [buf.readFloatLE(i + 4), buf.readFloatLE(i + 8), buf.readFloatLE(i + 12)],
-				tvec: [buf.readFloatLE(i + 18), buf.readFloatLE(i + 20), buf.readFloatLE(i + 24)],
+				tvec: [buf.readFloatLE(i + 16), buf.readFloatLE(i + 20), buf.readFloatLE(i + 24)],
 				epoch: buf.readIntLE(i + 28, 8),
 				sensor1: buf.readFloatLE(i + 36),
 				sensor2: buf.readFloatLE(i + 40)
@@ -32,7 +34,7 @@ socket.on('markers', function (arrbuf) {
 			marker.localTimeMs = Date.now();
 			globalStore.addMarker(marker);
 		}
-		console.log('round trip time in ms: %d', marker.localTimeMs - marker.epoch);
+		//console.log('round trip time in ms: %d', marker.localTimeMs - marker.epoch);
     }
 });
 
@@ -53,6 +55,10 @@ var renderer = new PIXI.WebGLRenderer(resolution.x, resolution.y, { backgroundCo
 var scale = pixiUtil.scaleToWindow(renderer.view);
 document.body.appendChild(renderer.view);
 var stage = new PIXI.Container();
+var markerRenderer;
+
+
+
 // Rescale
 window.addEventListener("resize", function () {
 	scale = pixiUtil.scaleToWindow(renderer.view);
@@ -78,6 +84,9 @@ function init() {
 	table.drawCircle(resolution.x / 2, resolution.y / 2, resolution.y / 2);
 	table.endFill();
 	stage.addChild(table);
+	
+	// Markers
+	markerRenderer = new MarkerRenderer(90, 30, stage);
 
 	// Start animation loop
 	update();
@@ -85,15 +94,16 @@ function init() {
 
 function update() {
 	
+	// Update markers
+	var markers = globalStore.getLastKnownMarkers(); //array of last known markers position
+	for (var i = 0; i < markers.length; i++) {
+		markerRenderer.update(markers[i]);    
+	};
+	
+	
 	// Render
 	renderer.render(stage);
 	requestAnimationFrame(update);
 }
 
-function updateMarkers() {
-	stage
-}
 
-function drawMarkers() {
-
-}

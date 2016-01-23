@@ -34,6 +34,7 @@
     <Compile Include="config.js" />
     <None Include="public\js\client.js" />
     <None Include="public\js\markerStore.js" />
+    <Compile Include="public\js\markerRenderer.js" />
     <Compile Include="public\js\pixiUtils.js" />
     <Compile Include="server.js" />
     <Content Include="package.json" />

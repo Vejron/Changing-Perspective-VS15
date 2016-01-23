@@ -1,53 +1,18 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-*/
-
-
+#include <opencv2\imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "aruco_pre_filter.h"
+#include "jitter_filter.h"
 #include "UDPClient.h"
 
 using namespace std;
 using namespace cv;
 using boost::asio::ip::udp;
+
 
 namespace {
 const char* about = "Basic marker detection";
@@ -71,7 +36,7 @@ struct DetectorSettings
 	int tableId = 0;
 	int camId = 0;
 	int dictionaryId = 5;
-	float markerLength = 0.1f;
+	double markerLength = 0.065;
 	bool showRejected = false;
 	bool showDebugView = false;
 	string paramsFile;
@@ -152,7 +117,7 @@ static bool readTableConfiguration(string filename, DetectorSettings &settings)
 	return true;
 }
 
-static int64_t millisecondsSinceEpoch()
+static int64_t milliSecondsSinceEpoch()
 {
 	using boost::gregorian::date;
 	using boost::posix_time::ptime;
@@ -162,17 +127,63 @@ static int64_t millisecondsSinceEpoch()
 	return (microsec_clock::universal_time() - epoch).total_milliseconds();
 }
 
-static vector<MarkerPod> makeBinaryPacket(const int tableId, const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids)
+static void filterOnDistance(vector<Vec3d> &rvecs, vector<Vec3d> &tvecs, vector<int> &ids, double near_clip = 0.3, double far_clip = 1.7)
+{
+	vector< int > _ids;
+	vector< Vec3d > _rvecs, _tvecs;
+
+	// filter out sane markers based on distance from camera
+	for (size_t i = 0; i < ids.size(); i++)
+	{
+		if ((tvecs[i][2] > near_clip) && (tvecs[i][2] < far_clip))
+		{
+			// valid marker
+			_ids.push_back(ids[i]);
+			_rvecs.push_back(rvecs[i]);
+			_tvecs.push_back(tvecs[i]);
+		}
+	}
+	// copy back to original containers
+	ids = _ids;
+	rvecs = _rvecs;
+	tvecs = _tvecs;
+}
+
+
+static vector<MarkerPod> makeBinaryPacket(const int tableId, const vector<Vec3d> &rvecs, const vector<Vec3d> &tvecs, const vector<int> &ids, double near_clip = 0.3, double far_clip = 1.7)
 {
 	vector<MarkerPod> packet;
 	for (size_t i = 0; i < ids.size(); i++)
 	{
-		MarkerPod p{tableId,
-					ids[i],
-					rvecs[i][0], rvecs[i][1], rvecs[i][2],
-					tvecs[i][0], tvecs[i][1], tvecs[i][2],
-					millisecondsSinceEpoch()};
-		packet.push_back(p);
+		// filter out markers with unrealistic z-value (TODO: refactor)
+		if (ids[i] != -1 && (tvecs[i][2] > near_clip) && (tvecs[i][2] < far_clip))
+		{
+			//convert rodriges (compact axis angle) to euler
+			/*Matx33d o(m(0), m(1), m(2),
+				m(3), m(4), m(5),
+				m(6), m(7), m(8));*/
+			Matx33d rt;
+			Rodrigues(rvecs[i], rt);
+			double r0, r1, r2;
+			r0 = atan2(rt.val[5], rt.val[8]);
+			r1 = atan2(-rt.val[2], sqrt(rt.val[0]* rt.val[0] + rt.val[1] * rt.val[1]));
+			r2 = atan2(rt.val[1], rt.val[0]);
+
+			MarkerPod p{ tableId,
+						ids[i],
+						r0, r1, r2,
+						//rvecs[i][0], rvecs[i][1], rvecs[i][2],
+						tvecs[i][0], tvecs[i][1], tvecs[i][2],
+						milliSecondsSinceEpoch() };
+			packet.push_back(p);
+		}
+		else
+		{
+			if (ids[i] != -1)
+				cout << "INFO: Unrealistic marker position detetected. Z = " << tvecs[i][2] << endl;
+			//else
+			//	cout << "filtered out";
+		}
 	}
 	return packet;
 }
@@ -210,6 +221,24 @@ static string makeJsonPacket(const vector<Vec3d> &rvecs, const vector<Vec3d> &tv
 	jsonPacket << "]}";
 
 	return jsonPacket.str();
+}
+
+static void getEulerAngles(Mat &rotCamerMatrix, Vec3d &eulerAngles) {
+
+	Mat cameraMatrix, rotMatrix, transVect, rotMatrixX, rotMatrixY, rotMatrixZ;
+	double* _r = rotCamerMatrix.ptr<double>();
+	double projMatrix[12] = { _r[0],_r[1],_r[2],0,
+		_r[3],_r[4],_r[5],0,
+		_r[6],_r[7],_r[8],0 };
+
+	decomposeProjectionMatrix(Mat(3, 4, CV_64FC1, projMatrix),
+		cameraMatrix,
+		rotMatrix,
+		transVect,
+		rotMatrixX,
+		rotMatrixY,
+		rotMatrixZ,
+		eulerAngles);
 }
 
 /**
@@ -255,15 +284,25 @@ int main(int argc, char *argv[])
     int totalIterations = 0;
 	Mat image, imageCopy;
 
+	// Create a window
+	namedWindow("out");
+	//Create trackbar to change brightness
+	int threshold = 128;
+	createTrackbar("Threshold", "out", &threshold, 255);
+
 	// Udp test
 	try
 	{
 		boost::asio::io_service io_service;
 		UDPClient client(io_service, "localhost", "666");
+		aruco_pre_filter::filter filter;
+		marker_tracker::jitterFilter smoothing(90, 5);
+		marker_tracker::MovementFilter moveFilter(90);
 		
 		while (inputVideo.grab()) {
 			inputVideo.retrieve(image);
-
+			image.copyTo(imageCopy);
+			//filter.process(image, image, threshold);
 
 			double tick = (double)getTickCount();
 
@@ -278,9 +317,14 @@ int main(int argc, char *argv[])
 				aruco::estimatePoseSingleMarkers(corners, settings.markerLength,
 												 settings.camMatrix, settings.distCoeffs, rvecs, tvecs);
 
-				auto p = makeBinaryPacket(settings.tableId ,rvecs, tvecs, ids);
+				//smooth movement
+				smoothing.processInPlace(ids, rvecs, tvecs);
+				moveFilter.filterInPlace(ids, rvecs, tvecs);
+				//transmit to server
+				auto p = makeBinaryPacket(settings.tableId, rvecs, tvecs, ids);
+				if (p.size() > 0)
+					cout << "Transmited " << p.size() << " marker updates" << endl;
 				client.send(p);
-				//client.send(makeJsonPacket(rvecs, tvecs, ids));
 			}
 
 			double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
@@ -291,10 +335,10 @@ int main(int argc, char *argv[])
 					<< "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms) "
 					<< "Detected Markers = " << ids.size() << endl;
 			}
-
 			// draw results
-			image.copyTo(imageCopy);
-			if (ids.size() > 0) {
+			
+			if (ids.size() > 0) 
+			{
 				aruco::drawDetectedMarkers(imageCopy, corners, ids);
 				for (unsigned int i = 0; i < ids.size(); i++)
 					aruco::drawAxis(imageCopy, settings.camMatrix, settings.distCoeffs, rvecs[i], tvecs[i],
@@ -303,6 +347,19 @@ int main(int argc, char *argv[])
 
 			if (settings.showRejected && rejected.size() > 0)
 				aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
+
+			//draw debug text
+			if (ids.size() > 0)
+			{
+				stringstream ss;
+				for (size_t i = 0; i < ids.size(); i++)
+				{
+					ss << "Translation:" << std::setprecision(3) << tvecs[i];
+
+					putText(imageCopy, ss.str(), Point(10, 20 + i * 30), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 2);
+					ss.str("");
+				}
+			}
 
 			imshow("out", imageCopy);
 			char key = (char)waitKey(10);

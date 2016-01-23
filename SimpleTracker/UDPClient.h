@@ -44,7 +44,8 @@ public:
 
 	void send(const std::vector<MarkerPod>& msg) {
 		//std::cout << msg[0].epoch << endl;
-		_socket.send_to(boost::asio::buffer(msg), _endpoint);
+		if(msg.size() > 0)
+			_socket.send_to(boost::asio::buffer(msg), _endpoint);
 	}
 
 private:

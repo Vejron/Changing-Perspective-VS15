@@ -35,6 +35,12 @@
     <ClInclude Include="UDPClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="aruco_pre_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jitter_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="camera_calibration.xml">

@@ -164,6 +164,8 @@
     <Xml Include="camera_calibration.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aruco_pre_filter.h" />
+    <ClInclude Include="jitter_filter.h" />
     <ClInclude Include="UDPClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

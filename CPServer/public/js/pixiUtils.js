@@ -74,6 +74,26 @@
 	return scale;
 }
 
+// god to have
+function updatePose(id, error, rotation, translation) {
+	var yaw = -Math.atan2(rotation[0][2], rotation[2][2]);
+	var pitch = -Math.asin(-rotation[1][2]);
+	var roll = Math.atan2(rotation[1][0], rotation[1][1]);
+	
+	var d = document.getElementById(id);
+	d.innerHTML = " error: " + error 
+                  + "<br/>" 
+                  + " x: " + (translation[0] | 0) 
+                  + " y: " + (translation[1] | 0) 
+                  + " z: " + (translation[2] | 0) 
+                  + "<br/>" 
+                  + " yaw: " + Math.round(-yaw * 180.0 / Math.PI) 
+                  + " pitch: " + Math.round(-pitch * 180.0 / Math.PI) 
+                  + " roll: " + Math.round(roll * 180.0 / Math.PI);
+};
+
+
+
 module.exports = {
 	scaleToWindow: _scaleToWindow
 };

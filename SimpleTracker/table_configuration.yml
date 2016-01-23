@@ -5,5 +5,5 @@ cameraCalibrationFile: "camera_calibration.xml"
 useDefaultParameters: 1
 detectorParameterFile: "detector_params.yml"
 markerDictionary: 5
-markerLength: 0.1
+markerLength: 0.065
 

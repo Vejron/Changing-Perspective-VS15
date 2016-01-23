@@ -59,11 +59,14 @@ MarkerTracker.on('listening', function () {
  * [<uint16> table id][<uint16> marker id][<float32, float32, float32> rotation vector]
  * [<float32, float32, float32> translation vector][<int64> time since epoch in ms]
  * Size of each marker POD is 36 bytes, so packet size is between 36 up to (36 x 6) for all markers 
+ * Edge case: implement automatic detection of endianess otherwise it could screw up big time on
+ * another arcitecture (some exotic ARMs and itanium, but most plattforms nowadays are LE) after 
+ * some googling it seems almost all modern system runs LE since Apple ditched powerPC Yay!!
 */
 MarkerTracker.on('message', function (buf, rinfo) {
 	const packetSize = config.packetSizeOnServer;
 	
-	console.log('Received %d bytes from %s:%d\n', buf.length, rinfo.address, rinfo.port);
+	//console.log('Received %d bytes from %s:%d\n', buf.length, rinfo.address, rinfo.port);
 	
 	// Simple check for malformed packets
 	if (buf.length % packetSize === 0) {
@@ -73,7 +76,7 @@ MarkerTracker.on('message', function (buf, rinfo) {
 				tId: buf.readUInt16LE(i + 0),
 				mId: buf.readUInt16LE(i + 2),
 				rvec: [buf.readFloatLE(i + 4), buf.readFloatLE(i + 8), buf.readFloatLE(i + 12)],
-				tvec: [buf.readFloatLE(i + 18), buf.readFloatLE(i + 20), buf.readFloatLE(i + 24)],
+				tvec: [buf.readFloatLE(i + 16), buf.readFloatLE(i + 20), buf.readFloatLE(i + 24)],
 				epoch: buf.readIntLE(i + 28, 8),
 				sensor1: 0, // TODO: not implemented yet
 				sensor2: 0  // will be added by smart markers (Tokens)
@@ -84,6 +87,13 @@ MarkerTracker.on('message', function (buf, rinfo) {
 			//jsonMarkerDictionary[marker.id] = marker;
 			//console.log('tracker time: %d node time: %d', marker.epoch, Date.now());
 			//console.log('Table Id:%d Marker Id:%d r:%s t:%s', marker.tId, marker.mId, marker.rvec.toString(), marker.tvec.toString());
+			//console.log("Marker translation [%d, %d, %d]", marker.tvec[0], marker.tvec[1], marker.tvec[2]);
+			//console.log("Marker rotation [%d, %d, %d]", marker.rvec[0], marker.rvec[1], marker.rvec[2]);
+			var yaw = -Math.atan2(marker.rvec[1], marker.rvec[0]);
+			var pitch = -Math.asin(-marker.rvec[1]);
+			var roll = Math.atan2(marker.rvec[0], marker.rvec[1]);
+			console.log("Marker rotation [%d, %d, %d]", yaw, pitch, roll);
+
 		}
 	}
 });
@@ -122,7 +132,7 @@ function binaryPackerFromArray(jsonPacket) {
 		byteOffset += keySizeInBytes; // jump to next marker
 	};
 
-	console.log(dataToSend);
+	//console.log(dataToSend);
 	return dataToSend;
 }
 
